@@ -1,0 +1,16 @@
+{
+  "name": "pro_1",
+  "version": "1.0.0",
+  "description": "a backend learning",
+  "keywords": [
+    "javascript",
+    "backend"
+  ],
+  "license": "ISC",
+  "author": "Krish Patel",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
