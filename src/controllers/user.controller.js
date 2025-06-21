@@ -17,13 +17,20 @@ const registerUser = asyncHandler(async (req, res) => {
 
 
     const { fullName, email, username, password } = req.body
-    console.log("email: ", email);
+
+    console.log("\n******** User body response ********\n");
+    console.log(req.body);
+    console.log("\n************************************\n");
+    console.log("\n******** Files response ********\n");
+    console.log(req.files);
+    console.log("\n************************************\n");
+
 
     if ([fullName, email, username, password].some((feild) => feild?.trim() === "")) {
         throw new ApiError(400, "All fields are required")
     }
 
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or: [{ username }, { email }]
     })
 
@@ -32,7 +39,13 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 
     const avatarLocalPath = req.files?.avatar[0]?.path;
-    const coverImageLocalPath = req.files?.coverImage[0].path;
+    // const coverImageLocalPath = req.files?.coverImage[0].path; // Problem(i): Makes undefined error when no coverImage is given
+
+    // Solution(i)
+    let coverImageLocalPath;
+    if (req.files && Array.isArray(req.files.coverImage) && req.coverImage.length > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path
+    }
 
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is required")
@@ -53,18 +66,18 @@ const registerUser = asyncHandler(async (req, res) => {
         password,
         username: username.toLowerCase()
     })
-    
-   const createdUser = await User.findById(user._id)?.select(
+
+    const createdUser = await User.findById(user._id)?.select(
         "-password -refreshToken"
-   )
+    )
 
-   if (!createdUser) {
-    throw new ApiError(500, "Something went wrong while registration")
-   }
+    if (!createdUser) {
+        throw new ApiError(500, "Something went wrong while registration")
+    }
 
-   return res.status(201).json(
-    new ApiResponce(200, createdUser, "User registered sucessfully")
-   )
+    return res.status(201).json(
+        new ApiResponce(200, createdUser, "User registered sucessfully")
+    )
 
 })
 
