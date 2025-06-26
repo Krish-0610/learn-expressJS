@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js"
 import { uploadOnCloudnary } from "../utils/cloudinary.js"
 import { ApiResponce } from "../utils/apiResponce.js"
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose"
 
 
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -297,6 +298,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
         .json(new ApiResponce(200, user, "Avatar updated successfully"))
 
 })
+
 const updateUserCoverImage = asyncHandler(async (req, res) => {
     const coverImageLocalPath = req.file?.path
     if (!coverImageLocalPath) {
@@ -398,6 +400,53 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         .json(new ApiResponce(200, channel[0], "User channel fetched successfully"))
 })
 
+const getWatchHistory = asyncHandler(async (req, res) => {
+    const user = await User.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(req.user._id)
+            }
+        },
+        {
+            $lookup: {
+                from: "videos",
+                localField: "watchHistory",
+                foreignField: "_id",
+                as: "watchHistory",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            pipeline: [ //try this outside
+                                {
+                                    $project: {
+                                        fullName: 1,
+                                        username: 1,
+                                        avatar: 1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            owner: {
+                                $first: "$owner"
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ])
+    return res
+        .status(200)
+        .json(new ApiResponce(200, user[0].watchHistory, "Watch history fetched successfully"))
+})
+
 export {
     registerUser,
     loginUser,
@@ -408,5 +457,6 @@ export {
     updateAccountDetails,
     updateUserAvatar,
     updateUserCoverImage,
-    getUserChannelProfile
+    getUserChannelProfile,
+    getWatchHistory
 }
